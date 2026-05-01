@@ -10,16 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SheetsIndexRouteImport } from './routes/sheets/index'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
 import { Route as NpcsIndexRouteImport } from './routes/npcs/index'
 import { Route as LoreIndexRouteImport } from './routes/lore/index'
 import { Route as LocationsIndexRouteImport } from './routes/locations/index'
 import { Route as ItemsIndexRouteImport } from './routes/items/index'
 import { Route as CharactersIndexRouteImport } from './routes/characters/index'
+import { Route as SheetsCharacterIdRouteImport } from './routes/sheets/$characterId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SheetsIndexRoute = SheetsIndexRouteImport.update({
+  id: '/sheets/',
+  path: '/sheets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionsIndexRoute = SessionsIndexRouteImport.update({
@@ -52,73 +59,92 @@ const CharactersIndexRoute = CharactersIndexRouteImport.update({
   path: '/characters/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SheetsCharacterIdRoute = SheetsCharacterIdRouteImport.update({
+  id: '/sheets/$characterId',
+  path: '/sheets/$characterId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sheets/$characterId': typeof SheetsCharacterIdRoute
   '/characters': typeof CharactersIndexRoute
   '/items': typeof ItemsIndexRoute
   '/locations': typeof LocationsIndexRoute
   '/lore': typeof LoreIndexRoute
   '/npcs': typeof NpcsIndexRoute
   '/sessions': typeof SessionsIndexRoute
+  '/sheets': typeof SheetsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sheets/$characterId': typeof SheetsCharacterIdRoute
   '/characters': typeof CharactersIndexRoute
   '/items': typeof ItemsIndexRoute
   '/locations': typeof LocationsIndexRoute
   '/lore': typeof LoreIndexRoute
   '/npcs': typeof NpcsIndexRoute
   '/sessions': typeof SessionsIndexRoute
+  '/sheets': typeof SheetsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sheets/$characterId': typeof SheetsCharacterIdRoute
   '/characters/': typeof CharactersIndexRoute
   '/items/': typeof ItemsIndexRoute
   '/locations/': typeof LocationsIndexRoute
   '/lore/': typeof LoreIndexRoute
   '/npcs/': typeof NpcsIndexRoute
   '/sessions/': typeof SessionsIndexRoute
+  '/sheets/': typeof SheetsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/sheets/$characterId'
     | '/characters'
     | '/items'
     | '/locations'
     | '/lore'
     | '/npcs'
     | '/sessions'
+    | '/sheets'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/sheets/$characterId'
     | '/characters'
     | '/items'
     | '/locations'
     | '/lore'
     | '/npcs'
     | '/sessions'
+    | '/sheets'
   id:
     | '__root__'
     | '/'
+    | '/sheets/$characterId'
     | '/characters/'
     | '/items/'
     | '/locations/'
     | '/lore/'
     | '/npcs/'
     | '/sessions/'
+    | '/sheets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SheetsCharacterIdRoute: typeof SheetsCharacterIdRoute
   CharactersIndexRoute: typeof CharactersIndexRoute
   ItemsIndexRoute: typeof ItemsIndexRoute
   LocationsIndexRoute: typeof LocationsIndexRoute
   LoreIndexRoute: typeof LoreIndexRoute
   NpcsIndexRoute: typeof NpcsIndexRoute
   SessionsIndexRoute: typeof SessionsIndexRoute
+  SheetsIndexRoute: typeof SheetsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sheets/': {
+      id: '/sheets/'
+      path: '/sheets'
+      fullPath: '/sheets'
+      preLoaderRoute: typeof SheetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sessions/': {
@@ -172,17 +205,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CharactersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sheets/$characterId': {
+      id: '/sheets/$characterId'
+      path: '/sheets/$characterId'
+      fullPath: '/sheets/$characterId'
+      preLoaderRoute: typeof SheetsCharacterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SheetsCharacterIdRoute: SheetsCharacterIdRoute,
   CharactersIndexRoute: CharactersIndexRoute,
   ItemsIndexRoute: ItemsIndexRoute,
   LocationsIndexRoute: LocationsIndexRoute,
   LoreIndexRoute: LoreIndexRoute,
   NpcsIndexRoute: NpcsIndexRoute,
   SessionsIndexRoute: SessionsIndexRoute,
+  SheetsIndexRoute: SheetsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
