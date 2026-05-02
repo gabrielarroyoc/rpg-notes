@@ -18,7 +18,6 @@ import {
 	Crosshair,
 	Crown,
 	Dices,
-	Drill,
 	Eye,
 	Flame,
 	Ghost,
