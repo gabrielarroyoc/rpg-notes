@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
 	BookOpen,
+	FileText,
 	House,
 	Map as MapIcon,
 	Package,
@@ -12,6 +13,7 @@ import {
 const navItems = [
 	{ to: "/", label: "Dashboard", Icon: House },
 	{ to: "/characters", label: "Personagens", Icon: User },
+	{ to: "/sheets", label: "Fichas", Icon: FileText },
 	{ to: "/npcs", label: "NPCs", Icon: Users },
 	{ to: "/sessions", label: "Sessões", Icon: ScrollText },
 	{ to: "/items", label: "Itens", Icon: Package },

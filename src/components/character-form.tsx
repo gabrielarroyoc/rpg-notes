@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Plus } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
@@ -97,7 +97,11 @@ export function CharacterEditButton({
 
 // =====================================================
 //  Diálogo principal — controlado ou não-controlado
+//  Fluxo create: "intro" → "template" → "form"
+//  Fluxo edit: direto para "form"
 // =====================================================
+type DialogStep = "intro" | "template" | "form";
+
 interface CharacterFormDialogProps {
 	character?: Character; // se passado, modo edição
 	trigger?: ReactNode;
@@ -119,11 +123,7 @@ function CharacterFormDialog({
 	const addCharacter = useRPGStore((s) => s.addCharacter);
 	const updateCharacter = useRPGStore((s) => s.updateCharacter);
 
-	// Em modo create começamos no system picker (step "system");
-	// Em modo edit já entramos direto no formulário com o sistema fixado.
-	const [step, setStep] = useState<"system" | "form">(
-		isEdit ? "form" : "system",
-	);
+	const [step, setStep] = useState<DialogStep>(isEdit ? "form" : "intro");
 	const [activeSection, setActiveSection] = useState<CharacterSection>("identity");
 
 	const form = useForm<CharacterFormValues>({
@@ -132,13 +132,15 @@ function CharacterFormDialog({
 	const { register, handleSubmit, reset, control, setValue, formState } = form;
 
 	const system = useWatch({ control, name: "system" }) as RpgSystem;
+	const characterName = useWatch({ control, name: "characterName" });
 	const config = SYSTEM_CONFIG[system] ?? SYSTEM_CONFIG.dnd5e;
+	const nameIsEmpty = !characterName?.trim();
 
 	// Resetar quando abrir o dialog ou trocar a entidade.
 	useEffect(() => {
 		if (open) {
 			reset(buildDefaults(character ?? undefined));
-			setStep(isEdit ? "form" : "system");
+			setStep(isEdit ? "form" : "intro");
 			setActiveSection("identity");
 		}
 	}, [open, character, isEdit, reset]);
@@ -173,146 +175,244 @@ function CharacterFormDialog({
 		setStep("form");
 	}
 
+	function handleCreateBlank() {
+		setStep("form");
+	}
+
+	// ---- Render: Worldcraft-style intro ----
+	const renderIntro = () => (
+		<div className="flex flex-col gap-6 p-6">
+			<DialogHeader>
+				<DialogTitle className="font-display text-lg">
+					Nova Ficha de Personagem
+				</DialogTitle>
+				<DialogDescription>
+					Crie uma ficha avulsa — você pode vincular a um mundo depois.
+				</DialogDescription>
+			</DialogHeader>
+
+			{/* Nome do personagem */}
+			<div className="space-y-1.5">
+				<label
+					htmlFor="intro-name"
+					className="text-[13px] font-semibold text-foreground"
+				>
+					Nome do Personagem
+				</label>
+				<Input
+					id="intro-name"
+					placeholder="Ex: Kael, o Andarilho"
+					{...register("characterName")}
+					className="h-10"
+					autoFocus
+				/>
+			</div>
+
+			{/* Template picker trigger */}
+			<div className="space-y-1.5">
+				<label className="text-[13px] font-semibold text-foreground">
+					Sistema / Template
+				</label>
+				<button
+					type="button"
+					onClick={() => setStep("template")}
+					className="flex w-full items-center gap-2.5 rounded-md border border-border bg-card-elevated/40 px-3 py-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:border-border-hover hover:bg-card-elevated/70 hover:text-foreground"
+				>
+					<FileText className="h-4 w-4 shrink-0" strokeWidth={1.6} />
+					{system !== "generic" ? (
+						<span className="text-foreground font-medium">{config.label}</span>
+					) : (
+						<span>Escolher template (opcional)...</span>
+					)}
+				</button>
+				<p className="text-[11px] text-muted-foreground">
+					Você pode criar em branco e adicionar blocos manualmente depois.
+				</p>
+			</div>
+
+			{/* Actions */}
+			<div className="flex items-center justify-end gap-2 pt-1">
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onClick={() => setOpen(false)}
+				>
+					Cancelar
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					onClick={handleCreateBlank}
+					disabled={nameIsEmpty}
+				>
+					Criar Ficha
+				</Button>
+			</div>
+		</div>
+	);
+
+	// ---- Render: Template selection ----
+	const renderTemplateStep = () => (
+		<div className="flex max-h-[92vh] flex-col">
+			<div className="border-b border-border px-6 pt-6 pb-4">
+				<div className="flex items-center gap-3">
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => setStep("intro")}
+					>
+						<ArrowLeft className="h-4 w-4" />
+					</Button>
+					<div>
+						<DialogTitle className="font-display text-lg">
+							Escolher Template
+						</DialogTitle>
+						<DialogDescription>
+							O formulário se adapta ao sistema escolhido.
+						</DialogDescription>
+					</div>
+				</div>
+			</div>
+			<div className="flex-1 overflow-y-auto px-6 py-5">
+				<SystemPicker value={system} onSelect={handleSelectSystem} />
+			</div>
+		</div>
+	);
+
+	// ---- Render: Full form (edit or create) ----
+	const renderForm = () => (
+		<form
+			onSubmit={handleSubmit(onSubmit)}
+			className="flex max-h-[92vh] flex-col"
+		>
+			<DialogHeader className="border-b border-border px-6 pt-6 pb-4">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0">
+						<DialogTitle className="font-display text-lg">
+							{isEdit
+								? `Editar: ${character?.characterName || "Ficha"}`
+								: "Nova Ficha de Personagem"}
+						</DialogTitle>
+						<DialogDescription>
+							Sistema: {config.label} — {config.tagline}
+						</DialogDescription>
+					</div>
+
+					{!isEdit && (
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => setStep("intro")}
+						>
+							<ArrowLeft className="h-3.5 w-3.5" />
+							Voltar
+						</Button>
+					)}
+				</div>
+
+				<div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+					<Field label="Sistema" htmlFor="system">
+						<Select id="system" {...register("system")}>
+							{Object.values(SYSTEM_CONFIG).map((s) => (
+								<option key={s.value} value={s.value}>
+									{s.label}
+								</option>
+							))}
+						</Select>
+					</Field>
+					<Field label="Nome do jogador" htmlFor="playerName">
+						<Input
+							id="playerName"
+							placeholder="Quem joga este personagem"
+							{...register("playerName")}
+						/>
+					</Field>
+				</div>
+
+				<div className="mt-3">
+					<FormTabs
+						tabs={tabs}
+						value={activeSection}
+						onChange={(id) => setActiveSection(id as CharacterSection)}
+					/>
+				</div>
+			</DialogHeader>
+
+			<div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+				{activeSection === "identity" && (
+					<IdentitySection
+						register={register}
+						control={control}
+						setValue={setValue}
+					/>
+				)}
+				{activeSection === "abilities" && (
+					<AbilitiesSection
+						register={register}
+						control={control}
+						config={config}
+					/>
+				)}
+				{activeSection === "sanity" && (
+					<SanitySection register={register} />
+				)}
+				{activeSection === "combat" && (
+					<CombatSection register={register} config={config} />
+				)}
+				{activeSection === "personality" && (
+					<PersonalitySection register={register} />
+				)}
+				{activeSection === "magic" && config.showSpells && (
+					<MagicSection register={register} />
+				)}
+				{activeSection === "notes" && (
+					<NotesSection register={register} />
+				)}
+			</div>
+
+			<div className="flex items-center justify-between gap-2 border-t border-border bg-card-elevated/40 px-6 py-3">
+				<span className="text-[11px] text-muted-foreground">
+					Aba: {SECTION_LABELS[activeSection]}
+				</span>
+				<div className="flex items-center gap-2">
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => setOpen(false)}
+					>
+						Cancelar
+					</Button>
+					<Button type="submit" size="sm" disabled={formState.isSubmitting}>
+						{isEdit ? "Salvar alterações" : "Salvar Ficha"}
+					</Button>
+				</div>
+			</div>
+		</form>
+	);
+
+	// Dialog size depends on step
+	const dialogSizeClass =
+		step === "intro"
+			? "!max-w-md"
+			: step === "template"
+				? "!max-w-4xl"
+				: "!max-w-3xl";
+
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			{trigger && <DialogTrigger render={trigger as React.ReactElement} />}
 
-			<DialogContent className="!max-w-3xl max-h-[92vh] overflow-hidden p-0">
-				<form
-					onSubmit={handleSubmit(onSubmit)}
-					className="flex max-h-[92vh] flex-col"
-				>
-					<DialogHeader className="border-b border-border px-6 pt-6 pb-4">
-						<div className="flex items-start justify-between gap-3">
-							<div className="min-w-0">
-								<DialogTitle className="font-display text-lg">
-									{isEdit
-										? `Editar: ${character?.characterName || "Ficha"}`
-										: step === "system"
-											? "Nova Ficha — escolha o sistema"
-											: "Nova Ficha de Personagem"}
-								</DialogTitle>
-								<DialogDescription>
-									{step === "system"
-										? "O formulário se adapta ao sistema. Você pode mudar depois."
-										: `Sistema: ${config.label} — ${config.tagline}`}
-								</DialogDescription>
-							</div>
-
-							{step === "form" && !isEdit && (
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									onClick={() => setStep("system")}
-								>
-									<ArrowLeft className="h-3.5 w-3.5" />
-									Trocar sistema
-								</Button>
-							)}
-						</div>
-
-						{step === "form" && (
-							<div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-								<Field label="Sistema" htmlFor="system">
-									<Select id="system" {...register("system")}>
-										{Object.values(SYSTEM_CONFIG).map((s) => (
-											<option key={s.value} value={s.value}>
-												{s.label}
-											</option>
-										))}
-									</Select>
-								</Field>
-								<Field label="Nome do jogador" htmlFor="playerName">
-									<Input
-										id="playerName"
-										placeholder="Quem joga este personagem"
-										{...register("playerName")}
-									/>
-								</Field>
-							</div>
-						)}
-
-						{step === "form" && (
-							<div className="mt-3">
-								<FormTabs
-									tabs={tabs}
-									value={activeSection}
-									onChange={(id) => setActiveSection(id as CharacterSection)}
-								/>
-							</div>
-						)}
-					</DialogHeader>
-
-					<div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-						{step === "system" ? (
-							<SystemPicker value={system} onSelect={handleSelectSystem} />
-						) : (
-							<>
-								{activeSection === "identity" && (
-									<IdentitySection
-										register={register}
-										control={control}
-										setValue={setValue}
-									/>
-								)}
-								{activeSection === "abilities" && (
-									<AbilitiesSection
-										register={register}
-										control={control}
-										config={config}
-									/>
-								)}
-								{activeSection === "sanity" && (
-									<SanitySection register={register} />
-								)}
-								{activeSection === "combat" && (
-									<CombatSection register={register} config={config} />
-								)}
-								{activeSection === "personality" && (
-									<PersonalitySection register={register} />
-								)}
-								{activeSection === "magic" && config.showSpells && (
-									<MagicSection register={register} />
-								)}
-								{activeSection === "notes" && (
-									<NotesSection register={register} />
-								)}
-							</>
-						)}
-					</div>
-
-					<div className="flex items-center justify-between gap-2 border-t border-border bg-card-elevated/40 px-6 py-3">
-						<span className="text-[11px] text-muted-foreground">
-							{step === "system"
-								? "Etapa 1 de 2"
-								: `Aba: ${SECTION_LABELS[activeSection]}`}
-						</span>
-						<div className="flex items-center gap-2">
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								onClick={() => setOpen(false)}
-							>
-								Cancelar
-							</Button>
-							{step === "system" ? (
-								<Button
-									type="button"
-									size="sm"
-									onClick={() => setStep("form")}
-								>
-									Continuar
-								</Button>
-							) : (
-								<Button type="submit" size="sm" disabled={formState.isSubmitting}>
-									{isEdit ? "Salvar alterações" : "Salvar Ficha"}
-								</Button>
-							)}
-						</div>
-					</div>
-				</form>
+			<DialogContent
+				className={`${dialogSizeClass} max-h-[92vh] overflow-hidden p-0`}
+				showCloseButton={step !== "intro"}
+			>
+				{step === "intro" && renderIntro()}
+				{step === "template" && renderTemplateStep()}
+				{step === "form" && renderForm()}
 			</DialogContent>
 		</Dialog>
 	);
