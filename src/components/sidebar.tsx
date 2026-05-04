@@ -3,12 +3,15 @@ import {
 	BookOpen,
 	FileText,
 	House,
+	LogOut,
 	Map as MapIcon,
 	Package,
 	ScrollText,
 	User,
 	Users,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useRPGStore } from "@/lib/store";
 
 const navItems = [
 	{ to: "/dashboard", label: "Dashboard", Icon: House },
@@ -22,6 +25,24 @@ const navItems = [
 ];
 
 export function Sidebar() {
+	const { user, signOut } = useAuth();
+	const clearLocalData = useRPGStore((s) => s.clearLocalData);
+	const displayName =
+		(typeof user?.user_metadata.name === "string" && user.user_metadata.name) ||
+		user?.email ||
+		"Aventureiro";
+	const initials = displayName
+		.split(" ")
+		.map((part) => part[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
+
+	async function handleSignOut() {
+		clearLocalData();
+		await signOut();
+	}
+
 	return (
 		<aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/90 backdrop-blur-md">
 			<div className="flex h-full flex-col">
@@ -92,16 +113,25 @@ export function Sidebar() {
 				<div className="border-t border-sidebar-border px-3 py-3">
 					<div className="flex items-center gap-2.5">
 						<div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-[10px] font-bold text-primary ring-1 ring-primary/25">
-							LG
+							{initials || "RN"}
 						</div>
-						<div className="flex min-w-0 flex-col leading-tight">
+						<div className="flex min-w-0 flex-1 flex-col leading-tight">
 							<span className="truncate text-[12px] font-semibold text-foreground">
-								Luiz Garbini
+								{displayName}
 							</span>
 							<span className="truncate text-[10px] text-muted-foreground">
-								Mestre da Campanha
+								{user?.email ?? "Sessão ativa"}
 							</span>
 						</div>
+						<button
+							type="button"
+							onClick={handleSignOut}
+							className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+							title="Sair"
+							aria-label="Sair"
+						>
+							<LogOut className="h-3.5 w-3.5" />
+						</button>
 					</div>
 				</div>
 			</div>
