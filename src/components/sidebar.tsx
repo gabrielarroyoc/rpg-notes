@@ -9,7 +9,6 @@ import {
 	MessageSquareText,
 	Package,
 	ScrollText,
-	Settings,
 	User,
 	Users,
 } from "lucide-react";
@@ -115,7 +114,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
 
 					<div className="space-y-0.5 border-t border-border/60 pt-3">
 						<Link
-							to="/help"
+							to="/dashboard"
 							title="Central de Ajuda"
 							className={`flex items-center gap-2 rounded-md text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground ${
 								isCollapsed ? "justify-center p-2" : "px-3 py-1.5"
@@ -125,7 +124,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
 							{!isCollapsed && <span>Central de Ajuda</span>}
 						</Link>
 						<Link
-							to="/docs"
+							to="/dashboard"
 							title="Feedback"
 							className={`flex items-center gap-2 rounded-md text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground ${
 								isCollapsed ? "justify-center p-2" : "px-3 py-1.5"
