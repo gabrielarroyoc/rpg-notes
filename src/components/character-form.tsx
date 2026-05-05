@@ -86,11 +86,13 @@ export function CharacterEditButton({
 			open={open}
 			onOpenChange={onOpenChange}
 			trigger={
-				trigger ?? (
+				trigger === undefined ? (
 					<Button variant="ghost" size="sm">
 						<Pencil className="h-3.5 w-3.5" />
 						Editar
 					</Button>
+				) : (
+					trigger
 				)
 			}
 		/>
